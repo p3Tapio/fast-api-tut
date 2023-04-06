@@ -1,0 +1,22 @@
+https://fastapi.tiangolo.com/tutorial/
+
+start env: 
+ - source fast-env/bin/activate
+ - check: which python (pitäs olla ainakin 3.10)
+
+--
+
+Asennukset:
+pip install requirements.txt
+
+Start-it-up!
+uvicorn main:app --reload
+
+-- 
+docs: 
+http://127.0.0.1:8000/docs
+http://127.0.0.1:8000/redoc
+
+Uusi endpoint doksuille tai deaktivointi: 
+app = FastAPI(openapi_url="/api/v1/openapi.json")
+openapi_url=None
