@@ -1,7 +1,7 @@
 from enum import Enum
 import random
 from string import Template
-from fastapi import FastAPI, status, Query
+from fastapi import FastAPI, status, Query, Path
 from fastapi.responses import JSONResponse
 from typing import Union
 from pydantic import BaseModel
@@ -109,7 +109,7 @@ async def return_thingies(required_param: str, required_query: str,  not_require
     return {"required_param": required_param, "required_query": required_query, "not_required_query": not_required_query}
 
 
-"""""""""""""""""""""
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 REQUEST BODY
 
 Validointi-ilon lisäksi, class / Pydantic BaseModel niin VSC osaa ehdottaa attribuutit
@@ -155,9 +155,9 @@ async def edit_movie(movie_id: int, movie: Movie, q: str | None = None):
     return result
 
 
-"""
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 Query Parameters and String Validations
-"""
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 
 @app.get("/validated-query")
@@ -199,9 +199,10 @@ Query parameter list / multiple values
     --> palauttaa [foo, bar] jos ei yhtään q:ta request urlissa
 """
 
+
 @app.get("/query-list/")
-#/query-list?q=123&q=abc&q....
-async def query_list(q: Annotated[list[str] | None, Query()] = None): 
+# /query-list?q=123&q=abc&q....
+async def query_list(q: Annotated[list[str] | None, Query()] = None):
     query_items = {"q": q}
     return query_items
 
@@ -248,3 +249,35 @@ Exclude from OpenAPI
 https://fastapi.tiangolo.com/tutorial/query-params-str-validations/#exclude-from-openapi
 
 """
+
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Path Parameters and Numeric Validations
+
+- kuten yllä, voi antaa metadataa doksuille ja yhdistää query parameihin:  item_id: Annotated[int, Path()], q: Annotated[str | None, Query()] = None,
+- Järjestyksellä jolla queryt ja path paramit annetaan ei ole väliä jos Annotated käytössä, ks jos ei ym. tuosta etiäppäin:
+https://fastapi.tiangolo.com/tutorial/path-params-numeric-validations/#order-the-parameters-as-you-need
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+
+@app.get("/path-items/{item_id}")
+async def path_params(item_id: Annotated[int, Path()]):
+    results = {"item_id": item_id}
+    return results
+
+
+"""
+Number validations: 
+ - greater than or equal (ge=10)
+ - greater than and less than or equal (ge=10, le=1000)
+ - floats, greater than and less than:  Annotated[float, Path(gt=0, lt=10.5)]
+
+"""
+
+
+@app.get("/number-validation/{item_id}")
+async def number_validated(item_id: Annotated[int, Path(ge=10, le=20)]):
+    results = {"item_id": item_id}
+    return results
