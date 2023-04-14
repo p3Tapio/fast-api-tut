@@ -1,20 +1,15 @@
 from enum import Enum
 import random
 from string import Template
-from fastapi import FastAPI,  status
+from fastapi import FastAPI, status, Query
 from fastapi.responses import JSONResponse
 from typing import Union
 from pydantic import BaseModel
+from typing import Annotated
 
 app = FastAPI()
 
 # alkuun käytetty Union[] on python < 3.10 version takia, myöhempi | toimii > 3.10:ssä
-
-
-@app.get("/")
-async def root():
-    return {"message": "Hello World"}
-
 
 '''
 PATH PARAMS & ENUM
@@ -117,7 +112,7 @@ async def return_thingies(required_param: str, required_query: str,  not_require
 """""""""""""""""""""
 REQUEST BODY
 
-Validointi-ilon lisäksi, class / Pydantic BaseModel niin VSC osaa ehdottaa attribuutit 
+Validointi-ilon lisäksi, class / Pydantic BaseModel niin VSC osaa ehdottaa attribuutit
 """
 
 
@@ -158,3 +153,98 @@ async def edit_movie(movie_id: int, movie: Movie, q: str | None = None):
     if q:
         result.update({"query": q})
     return result
+
+
+"""
+Query Parameters and String Validations
+"""
+
+
+@app.get("/validated-query")
+# maksimi query param siis 3-10 pitkä, ja alettava 'id-'
+# wanhemassa pythonissa siis näin: Annotated[Union[str, None]]
+# ilman Annotated: (q: str | None = Query(default=None, max_length=50)
+# molemmissa None tekee siitä unrequired -- Annotated suositeltu, koska syitä xyz
+async def validated(q: Annotated[str | None, Query(min_length=3, max_length=10, regex="^id-")] = None):
+    results = {"items": [{"item_id": "Foo"}, {"item_id": "Bar"}]}
+    if q:
+        results.update({"q": q})
+    return results
+
+"""""
+default arvot 
+- jos on niin defaulttaa määritettyy arvoon, ja jos ei niin on pakollinen:
+     - testaa poistamalla = "fixedquery"
+     - vaihtehtoinen tapa: (q: Annotated[str, Query(min_length=3)] = ...)
+     - Jälkimmäisen käyttökohde esim: jos halutaan queryn arvo edes muodossa None: (q: Annotated[str | None, Query(min_length=3)] = ...): 
+       (miten tuo edes eroaa jos tota =... ei ole \_('_')_/)
+    - kolmen pisteen tilalla voi käyttää Required -taikasanaa (from pydantic import Required)
+"""
+
+
+@app.get("/validated-query-defaults")
+async def validated_defaults(q: Annotated[str | None, Query(min_length=3)] = ...):
+    results = {"items": [{"item_id": "Foo"}, {"item_id": "Bar"}]}
+    if q:
+        results.update({"q": q})
+    return results
+
+"""
+Query parameter list / multiple values
+
+    - tarttee list[str] + Query(), koska muuten loput tulkitaan request bodynä 
+    - vois myös olla pelkkä list ilman str määritystä: Annotated[list, Query()] = []
+
+    - defaultit voi asettaa array-tyylillä: (q: Annotated[list[str], Query()] = ["foo", "bar"]):
+    --> palauttaa [foo, bar] jos ei yhtään q:ta request urlissa
+"""
+
+@app.get("/query-list/")
+#/query-list?q=123&q=abc&q....
+async def query_list(q: Annotated[list[str] | None, Query()] = None): 
+    query_items = {"q": q}
+    return query_items
+
+
+"""
+Alias parameters
+
+    - jos query param on esim: item-query kyseessä ei ole validi pythoni muuttuja nimi
+    - jos sen on oltava tuossa muodossa niiiin tämä ratkaisee. 
+"""
+
+
+@app.get("/alias")
+# /alias?item-query=123
+async def alias_query(q: Annotated[str | None, Query(alias="item-query")] = None):
+    results = {"items": [{"item_id": "Foo"}, {"item_id": "Bar"}]}
+    if q:
+        results.update({"q": q})
+    return results
+
+
+"""
+Dokumentaatiohommeleita:
+
+Declare more metadata (= OpenAPI:iin lisätietoja)
+https://fastapi.tiangolo.com/tutorial/query-params-str-validations/#declare-more-metadata
+
+Deprecating params = varoitus doksuihin että joku vanhenee 
+https://fastapi.tiangolo.com/tutorial/query-params-str-validations/#deprecating-parameters
+
+Koko töräys esimi: 
+    Query(
+            alias="item-query",
+            title="Query string",
+            description="Query string for the items to search in the database that have a good match",
+            min_length=3,
+            max_length=50,
+            regex="^id-",
+            deprecated=True,
+        ),
+
+
+Exclude from OpenAPI
+https://fastapi.tiangolo.com/tutorial/query-params-str-validations/#exclude-from-openapi
+
+"""
