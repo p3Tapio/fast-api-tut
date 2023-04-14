@@ -1,7 +1,7 @@
 from enum import Enum
 import random
 from string import Template
-from fastapi import FastAPI, status, Query, Path
+from fastapi import FastAPI, status, Query, Path, Body
 from fastapi.responses import JSONResponse
 from typing import Union
 from pydantic import BaseModel
@@ -113,6 +113,7 @@ async def return_thingies(required_param: str, required_query: str,  not_require
 REQUEST BODY
 
 Validointi-ilon lisäksi, class / Pydantic BaseModel niin VSC osaa ehdottaa attribuutit
+str | None = None --> not required 
 """
 
 
@@ -270,6 +271,7 @@ async def path_params(item_id: Annotated[int, Path()]):
 
 """
 Number validations: 
+ - greater than (gt=1) 
  - greater than or equal (ge=10)
  - greater than and less than or equal (ge=10, le=1000)
  - floats, greater than and less than:  Annotated[float, Path(gt=0, lt=10.5)]
@@ -280,4 +282,51 @@ Number validations:
 @app.get("/number-validation/{item_id}")
 async def number_validated(item_id: Annotated[int, Path(ge=10, le=20)]):
     results = {"item_id": item_id}
+    return results
+
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Body - Multiple parameters 
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+
+class Item(BaseModel):
+    name: str
+    description: str | None = None
+    price: float
+    tax: float | None = None
+
+
+class User(BaseModel):
+    username: str
+    full_name: str | None = None
+
+
+@app.put("/thingy/{item_id}")
+# kutsussa vähintään: { "item": {"name": "Banana", "price": 12.2}, "user": {"username": "Pertti"}, "importance": 1 }
+# jostain kumman syystä tässä se hiffaa että q on query param myös ilman Query():ä: singular values are interpreted as query parameters, you don't have to explicitly add a Query
+async def update_thingy(item_id: int, item: Item, user: User, importance: Annotated[int, Body(gt=0, le=5)], q: str | None = None):
+    results = {"item_id": item_id, "item": item,
+               "user": user, "importance": importance}
+    if q:
+        results.update({"q": q})
+    return results
+
+
+"""
+ Embed a single body parameter
+
+ - tyyppaa: embeded_item(item_id: int, item: Item):
+    --> Tällöin requestin tulee olla: {"name": "Banana", "price": 12.2}
+    --> embedin kanssa: {"item": {"name": "Banana", "price": 12.2}}
+
+- jostain syystä yllä ei tartte, kun useampi sisus requestissa .. 
+"""
+
+@app.put("/embeded/{item_id}")
+# {"item": {"name": "Banana", "price": 12.2}}
+async def embeded_item(item_id: int, item: Annotated[Item, Body(embed=True)]):
+    results = {"item_id": item_id, "item": item}
     return results
