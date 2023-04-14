@@ -4,7 +4,7 @@ from string import Template
 from fastapi import FastAPI, status, Query, Path, Body
 from fastapi.responses import JSONResponse
 from typing import Union
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, HttpUrl
 from typing import Annotated
 
 app = FastAPI()
@@ -316,7 +316,7 @@ async def update_thingy(item_id: int, item: Item, user: User, importance: Annota
 
 
 """
- Embed a single body parameter
+ Embed a SINGLE body parameter
 
  - tyyppaa: embeded_item(item_id: int, item: Item):
     --> Tällöin requestin tulee olla: {"name": "Banana", "price": 12.2}
@@ -325,8 +325,131 @@ async def update_thingy(item_id: int, item: Item, user: User, importance: Annota
 - jostain syystä yllä ei tartte, kun useampi sisus requestissa .. 
 """
 
+
 @app.put("/embeded/{item_id}")
 # {"item": {"name": "Banana", "price": 12.2}}
 async def embeded_item(item_id: int, item: Annotated[Item, Body(embed=True)]):
     results = {"item_id": item_id, "item": item}
     return results
+
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Body - Fields
+
+- fieldille voi antaa samat paramit ja toimii kuten Query, Path tai Body, mutta importataan pydanticista fastapin sijaan 
+- Field(description="", title="") -- doksuja varten
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+
+class AnotherItem(BaseModel):
+    name: str
+    description: str | None = Field(
+        default=None, title="The description of the item", max_length=30, min_length=10
+    )
+    price: float = Field(gt=0)
+    tax: float | None = None
+
+
+@app.put("/another-item/{item_id}")
+# {"item": {"name": "Banana", "price": 12.2, "description": "hello"}}
+async def another_item_route(item_id: int, item: Annotated[AnotherItem, Body(embed=True)]):
+    results = {"item_id": item_id, "item": item}
+    return results
+
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+ **** Body - Nested Models *****
+
+ - peruslista aka json array, esim (python > 3.9, muuten joutuu importtaa List from typing )
+    tags: list = [], 
+ 
+ - typitetty lisa
+    tags: list[str] = []
+
+
+- vain uniikkeja stringejä --> set! (eli siis jos tags listassa duplikaatteja, menee ne kaivoon):
+    tags: set[str] = set()
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+
+class Image(BaseModel):
+    url: HttpUrl  # pydantic special types and validation
+    name: str
+
+
+class Product(BaseModel):
+    name: str
+    description: str | None = None
+    price: float
+    tags: set[str] = set()
+    # yksittäinen image --> image: Image | None = None
+    # image lista:
+    images: list[Image] | None = None
+
+
+@app.put("/products/{item_id}")
+async def update_product(item_id: int, product: Product):
+    results = {"item_id": item_id, "product": product}
+    return results
+
+"""
+esim ylle:
+{
+    "name": "Makkara",
+    "price": 12.2,
+    "tags": ["hk", "blue"],
+    "images": [
+        {"name": "kiekura-lenkki", "url": "http://www.makkara.fi"}
+    ]
+}
+"""
+
+
+"""""
+
+Deeply nested models
+
+esim yllä olevien jatkoksi, voi jatkaa vielä seuraavaan ja seuraavaan ..... 
+"""""
+
+class ShoppingBasket(BaseModel):
+    name: str
+    products: list[Product]
+
+@app.post("/shopping/")
+async def my_basket(shopping: ShoppingBasket):
+    return shopping
+
+"""
+Tällöin kutsu esim:
+{
+    "name": "Pertti",
+    "products": [
+       { 
+        "name": "Makkara",
+        "price": 12.2,
+        "tags": ["hk", "blue"],
+        "images": [
+                {"name": "kiekura-lenkki", "url": "http://www.makkara.fi"}
+            ]
+        }
+    ]
+}
+"""
+
+##########
+
+""""
+Bodies of arbitrary dicts
+-  kätevää jos et tiedö mitä kenttiä, attribuuttien nimiä tulee (nämä siis ennalta määrättyjä yllä olevissa pydantikilla tehdyissä classeissa)
+ (tyypit tosin määritelty, kyykkää esim jos {"nimi": "Pertti"})
+"""
+@app.post("/index-weights/")
+async def create_index_weights(weights: dict[int, float]):
+    return weights
+
+
