@@ -1,10 +1,10 @@
 from enum import Enum
 import random
 from string import Template
-from fastapi import FastAPI, status, Query, Path, Body
-from fastapi.responses import JSONResponse
-from typing import Union
-from pydantic import BaseModel, Field, HttpUrl
+from fastapi import FastAPI, Response, status, Query, Path, Body
+from fastapi.responses import JSONResponse, RedirectResponse
+from typing import Any, Union
+from pydantic import BaseModel, Field, HttpUrl, EmailStr
 from typing import Annotated
 
 app = FastAPI()
@@ -416,9 +416,11 @@ Deeply nested models
 esim yllä olevien jatkoksi, voi jatkaa vielä seuraavaan ja seuraavaan ..... 
 """""
 
+
 class ShoppingBasket(BaseModel):
     name: str
     products: list[Product]
+
 
 @app.post("/shopping/")
 async def my_basket(shopping: ShoppingBasket):
@@ -448,8 +450,135 @@ Bodies of arbitrary dicts
 -  kätevää jos et tiedö mitä kenttiä, attribuuttien nimiä tulee (nämä siis ennalta määrättyjä yllä olevissa pydantikilla tehdyissä classeissa)
  (tyypit tosin määritelty, kyykkää esim jos {"nimi": "Pertti"})
 """
+
+
 @app.post("/index-weights/")
 async def create_index_weights(weights: dict[int, float]):
     return weights
 
 
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Skipedi-skipedi:
+
+* Doksukamaa, esimi responssi OpenAPI:iin ym: https://fastapi.tiangolo.com/tutorial/schema-extra-example/#declare-request-example-data
+
+* Extra Data Types, eli siis esim datetime, UUID: https://fastapi.tiangolo.com/tutorial/extra-data-types/#extra-data-types
+
+* cookie params: https://fastapi.tiangolo.com/tutorial/cookie-params/
+
+* header params: https://fastapi.tiangolo.com/tutorial/header-params/
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+#####
+
+""""""""""""""""""""""""""""""""""
+
+Response Model - Return Type
+
+mm. 
+- validoi palautuvan datan 
+- rajaa ja filtteröi palautuvan datan
+- kaataa serverin jos yrittää palauttaa jotain määrittelyn ulkopuolelta, joten varmistaa että data tulee oletetussa muodossa, eikä mitään ylimääräistä pääse vahingossa vuotamaan 
+- voi määrittää classien kautta kuten yllä 
+
+
+"""""""""""""""""""""""""""""""""
+
+
+@app.post("/validated-response")
+async def validated_response(param: str) -> str:
+    return param
+
+
+@app.get("/validated-response")
+async def validated_again() -> list[str]:
+    return [
+        "miuku", "mauku"
+    ]
+
+"""
+response_model 
+  - käytetään kun ei haluta palauttaa just sitä mitä classissa on määritelty
+  - Ja sen kautta voi määrittää eri palautusmuodon (koska muuten editori itkee .. paitsi ei, ja en ymmärrä miksi näin. Ks. alta parempi tapa. \_('_')_/ )
+"""
+
+# class UserIn(BaseModel):
+#     username: str
+#     password: str
+#     email: EmailStr
+#     full_name: str | None = None
+
+
+# class UserOut(BaseModel):
+#     username: str
+#     email: EmailStr
+#     full_name: str | None = None
+
+
+# @app.post("/create-user/")
+# async def create_user(user: UserIn) -> UserOut:
+#     return user
+
+
+"""
+tai näin   - - - - - - - - 
+
+- ei ota sisään eikä päästä ulos muuta kuin mitä on määritelty 
+
+tai kolmas tapa response_model_exclude={"password"} alempana
+"""
+
+
+class UserOut(BaseModel):
+    username: str
+    email: EmailStr
+    full_name: str | None = None
+
+
+class UserIn(UserOut):
+    password: str
+
+    # "extra fields not permitted" -- millä tämän saisi aina vakiona? :thinking-face:
+    class Config:
+        extra = "forbid"
+
+
+@app.post("/create-user/")
+async def create_user(user: UserIn) -> UserOut:
+    return user
+
+"""
+ Response tyyppi
+ - alla olevat ok koska ne ovat Responsen "alaluokkia"
+"""
+
+
+@app.get("/portal")
+async def get_portal(teleport: bool = False) -> Response:
+    if teleport:
+        return RedirectResponse(url="https://www.youtube.com/watch?v=dQw4w9WgXcQ")
+    return JSONResponse(content={"message": "Here's your interdimensional portal."})
+
+
+"""
+Annotate a Response Subclass, Invalid Return Type Annotations ja Disable response model skipattu, koska xyz
+
+
+Response Model encoding parameters: voit skipata default arvojen palautuksen response_model_exclude_unsetillä: 
+@app.get("/items/{item_id}", response_model=Item, response_model_exclude_unset=True)
+
+myös: response_model_include and response_model_exclude
+https://fastapi.tiangolo.com/tutorial/response-model/#response_model_include-and-response_model_exclude
+
+"""
+
+
+@app.post("/create-another-user/", response_model=UserIn, response_model_exclude={"password"})
+async def create_another__user(user: UserIn):
+    return user
+
+@app.post("/create-one-more/", response_model=UserIn, response_model_include={"username", "email"})
+async def create_another__user(user: UserIn):
+    return user
