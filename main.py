@@ -709,6 +709,30 @@ Response with arbitrary dict
 .. eli lennosta muoto, jossa määritellään key:n ja value:n tyyppi
 """
 
+
 @app.get("/keyword-weights/", response_model=dict[str, float])
 async def read_keyword_weights():
     return {"foo": 2.3, "bar": 3.4}
+
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Response status codes 
+- tulee defaulttinakin mutta välillä tarvetta vekslaa
+- joko suoraan numeroilla tai "shortcuttien" kautta
+
+(ekassa muistin virkistykseksi req bodyllä ja toka query paramina)
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+class PseodoMeat(BaseModel):
+    name: str
+
+@app.post("/makkara/", status_code=201)
+async def create_makkara(req: PseodoMeat):
+    return {"makkara": req.name}
+
+
+@app.post("/lenkki/", status_code=status.HTTP_201_CREATED)
+async def create_lenkki(name: str):
+    return {"lenkki": name}
+
