@@ -113,7 +113,7 @@ async def return_thingies(required_param: str, required_query: str,  not_require
 REQUEST BODY
 
 Validointi-ilon lisäksi, class / Pydantic BaseModel niin VSC osaa ehdottaa attribuutit
-str | None = None --> not required 
+str | None = None --> not required
 """
 
 
@@ -173,11 +173,11 @@ async def validated(q: Annotated[str | None, Query(min_length=3, max_length=10, 
     return results
 
 """""
-default arvot 
+default arvot
 - jos on niin defaulttaa määritettyy arvoon, ja jos ei niin on pakollinen:
      - testaa poistamalla = "fixedquery"
      - vaihtehtoinen tapa: (q: Annotated[str, Query(min_length=3)] = ...)
-     - Jälkimmäisen käyttökohde esim: jos halutaan queryn arvo edes muodossa None: (q: Annotated[str | None, Query(min_length=3)] = ...): 
+     - Jälkimmäisen käyttökohde esim: jos halutaan queryn arvo edes muodossa None: (q: Annotated[str | None, Query(min_length=3)] = ...):
        (miten tuo edes eroaa jos tota =... ei ole \_('_')_/)
     - kolmen pisteen tilalla voi käyttää Required -taikasanaa (from pydantic import Required)
 """
@@ -193,7 +193,7 @@ async def validated_defaults(q: Annotated[str | None, Query(min_length=3)] = ...
 """
 Query parameter list / multiple values
 
-    - tarttee list[str] + Query(), koska muuten loput tulkitaan request bodynä 
+    - tarttee list[str] + Query(), koska muuten loput tulkitaan request bodynä
     - vois myös olla pelkkä list ilman str määritystä: Annotated[list, Query()] = []
 
     - defaultit voi asettaa array-tyylillä: (q: Annotated[list[str], Query()] = ["foo", "bar"]):
@@ -212,7 +212,7 @@ async def query_list(q: Annotated[list[str] | None, Query()] = None):
 Alias parameters
 
     - jos query param on esim: item-query kyseessä ei ole validi pythoni muuttuja nimi
-    - jos sen on oltava tuossa muodossa niiiin tämä ratkaisee. 
+    - jos sen on oltava tuossa muodossa niiiin tämä ratkaisee.
 """
 
 
@@ -231,10 +231,10 @@ Dokumentaatiohommeleita:
 Declare more metadata (= OpenAPI:iin lisätietoja)
 https://fastapi.tiangolo.com/tutorial/query-params-str-validations/#declare-more-metadata
 
-Deprecating params = varoitus doksuihin että joku vanhenee 
+Deprecating params = varoitus doksuihin että joku vanhenee
 https://fastapi.tiangolo.com/tutorial/query-params-str-validations/#deprecating-parameters
 
-Koko töräys esimi: 
+Koko töräys esimi:
     Query(
             alias="item-query",
             title="Query string",
@@ -270,8 +270,8 @@ async def path_params(item_id: Annotated[int, Path()]):
 
 
 """
-Number validations: 
- - greater than (gt=1) 
+Number validations:
+ - greater than (gt=1)
  - greater than or equal (ge=10)
  - greater than and less than or equal (ge=10, le=1000)
  - floats, greater than and less than:  Annotated[float, Path(gt=0, lt=10.5)]
@@ -287,7 +287,7 @@ async def number_validated(item_id: Annotated[int, Path(ge=10, le=20)]):
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-Body - Multiple parameters 
+Body - Multiple parameters
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -322,7 +322,7 @@ async def update_thingy(item_id: int, item: Item, user: User, importance: Annota
     --> Tällöin requestin tulee olla: {"name": "Banana", "price": 12.2}
     --> embedin kanssa: {"item": {"name": "Banana", "price": 12.2}}
 
-- jostain syystä yllä ei tartte, kun useampi sisus requestissa .. 
+- jostain syystä yllä ei tartte, kun useampi sisus requestissa ..
 """
 
 
@@ -337,7 +337,7 @@ async def embeded_item(item_id: int, item: Annotated[Item, Body(embed=True)]):
 
 Body - Fields
 
-- fieldille voi antaa samat paramit ja toimii kuten Query, Path tai Body, mutta importataan pydanticista fastapin sijaan 
+- fieldille voi antaa samat paramit ja toimii kuten Query, Path tai Body, mutta importataan pydanticista fastapin sijaan
 - Field(description="", title="") -- doksuja varten
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -364,8 +364,8 @@ async def another_item_route(item_id: int, item: Annotated[AnotherItem, Body(emb
  **** Body - Nested Models *****
 
  - peruslista aka json array, esim (python > 3.9, muuten joutuu importtaa List from typing )
-    tags: list = [], 
- 
+    tags: list = [],
+
  - typitetty lisa
     tags: list[str] = []
 
@@ -413,7 +413,7 @@ esim ylle:
 
 Deeply nested models
 
-esim yllä olevien jatkoksi, voi jatkaa vielä seuraavaan ja seuraavaan ..... 
+esim yllä olevien jatkoksi, voi jatkaa vielä seuraavaan ja seuraavaan .....
 """""
 
 
@@ -431,7 +431,7 @@ Tällöin kutsu esim:
 {
     "name": "Pertti",
     "products": [
-       { 
+       {
         "name": "Makkara",
         "price": 12.2,
         "tags": ["hk", "blue"],
@@ -461,7 +461,8 @@ async def create_index_weights(weights: dict[int, float]):
 
 Skipedi-skipedi:
 
-* Doksukamaa, esimi responssi OpenAPI:iin ym: https://fastapi.tiangolo.com/tutorial/schema-extra-example/#declare-request-example-data
+#declare-request-example-data
+* Doksukamaa, esimi responssi OpenAPI:iin ym: https://fastapi.tiangolo.com/tutorial/schema-extra-example/
 
 * Extra Data Types, eli siis esim datetime, UUID: https://fastapi.tiangolo.com/tutorial/extra-data-types/#extra-data-types
 
@@ -477,11 +478,11 @@ Skipedi-skipedi:
 
 Response Model - Return Type
 
-mm. 
-- validoi palautuvan datan 
+mm.
+- validoi palautuvan datan
 - rajaa ja filtteröi palautuvan datan
-- kaataa serverin jos yrittää palauttaa jotain määrittelyn ulkopuolelta, joten varmistaa että data tulee oletetussa muodossa, eikä mitään ylimääräistä pääse vahingossa vuotamaan 
-- voi määrittää classien kautta kuten yllä 
+- kaataa serverin jos yrittää palauttaa jotain määrittelyn ulkopuolelta, joten varmistaa että data tulee oletetussa muodossa, eikä mitään ylimääräistä pääse vahingossa vuotamaan
+- voi määrittää classien kautta kuten yllä
 
 
 """""""""""""""""""""""""""""""""
@@ -499,35 +500,13 @@ async def validated_again() -> list[str]:
     ]
 
 """
-response_model 
+response_model
   - käytetään kun ei haluta palauttaa just sitä mitä classissa on määritelty
-  - Ja sen kautta voi määrittää eri palautusmuodon (koska muuten editori itkee .. paitsi ei, ja en ymmärrä miksi näin. Ks. alta parempi tapa. \_('_')_/ )
-"""
+  - Ja sen kautta voi määrittää eri palautusmuodon
+  - Ks. Extra / Multiple Models
 
-# class UserIn(BaseModel):
-#     username: str
-#     password: str
-#     email: EmailStr
-#     full_name: str | None = None
-
-
-# class UserOut(BaseModel):
-#     username: str
-#     email: EmailStr
-#     full_name: str | None = None
-
-
-# @app.post("/create-user/")
-# async def create_user(user: UserIn) -> UserOut:
-#     return user
-
-
-"""
-tai näin   - - - - - - - - 
-
-- ei ota sisään eikä päästä ulos muuta kuin mitä on määritelty 
-
-tai kolmas tapa response_model_exclude={"password"} alempana
+tai näin:
+- ei ota sisään eikä päästä ulos muuta kuin mitä on modeliin määritelty
 """
 
 
@@ -550,6 +529,11 @@ async def create_user(user: UserIn) -> UserOut:
     return user
 
 """
+tai kolmas tapa response_model_exclude={"password"} alempana
+"""
+
+
+"""
  Response tyyppi
  - alla olevat ok koska ne ovat Responsen "alaluokkia"
 """
@@ -563,15 +547,15 @@ async def get_portal(teleport: bool = False) -> Response:
 
 
 """
-Annotate a Response Subclass, Invalid Return Type Annotations ja Disable response model skipattu, koska xyz
-
-
-Response Model encoding parameters: voit skipata default arvojen palautuksen response_model_exclude_unsetillä: 
-@app.get("/items/{item_id}", response_model=Item, response_model_exclude_unset=True)
-
-myös: response_model_include and response_model_exclude
+Annotate a Response Subclass, Invalid Return Type Annotations ja Disable response model skipattu
 https://fastapi.tiangolo.com/tutorial/response-model/#response_model_include-and-response_model_exclude
 
+----
+
+- Response Model encoding parameters: voit skipata default arvojen palautuksen response_model_exclude_unsetillä:
+@app.get("/items/{item_id}", response_model=Item, response_model_exclude_unset=True)
+
+- response_model_include and response_model_exclude:
 """
 
 
@@ -579,6 +563,152 @@ https://fastapi.tiangolo.com/tutorial/response-model/#response_model_include-and
 async def create_another__user(user: UserIn):
     return user
 
+
 @app.post("/create-one-more/", response_model=UserIn, response_model_include={"username", "email"})
 async def create_another__user(user: UserIn):
     return user
+
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Extra / Multiple Models
+
+
+Koska samalle asialle voi tarvii useamman modelin:
+- käyttis: 1. joka tulee ineen, 2. joka lähtee apilta, 3. joka tallennetaan kantaan
+
+perussetti: https://fastapi.tiangolo.com/tutorial/extra-models/#multiple-models
+- alla parempi version josta poistettu duplikointi
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+
+class UserBase(BaseModel):
+    username: str
+    email: EmailStr
+    full_name: str | None = None
+
+
+class UserRequest(UserBase):
+    password: str
+
+
+class UserResponse(UserBase):
+    pass  # = sama kuin UserBase
+
+
+class UserInDb(UserBase):
+    hashed_password: str
+
+
+def fake_password_hasher(password: str):
+    return "supersecret " + password + "!!!"
+
+
+def fake_save_user(user_request: UserRequest):
+    hash = fake_password_hasher(user_request.password)
+    user_in_db = UserInDb(**user_request.dict(), hashed_password=hash)
+    print("User saved! ..not really")
+    return user_in_db
+
+
+@app.post("/create-fake-user", response_model=UserResponse)
+async def create_fake_user(user_request: UserRequest):
+    user_saved = fake_save_user(user_request)
+    return user_saved
+
+"""
+    **user_request.dict() -- muuntaa dict:n modelin datasta (tekee vähän kuin jsonin)
+
+    esim:
+    user_in = UserIn(username="john", password="secret", email="john.doe@example.com")
+    user_dict = user_in.dict()
+
+    print(user_dict)
+    -->
+    {
+    'username': 'john',
+    'password': 'secret',
+    'email': 'john.doe@example.com',
+    'full_name': None,
+    }
+
+   ----------------------- Unwrapping a dict ------------------------------
+
+   Jos otetaan dict, ja passataan se funktioon **-merkkien kera, python "unwrappaa" sen, ja passaa suoraan key-value parit funktion parametreina 
+
+   UserInDb(**user_in.dict(), hashed_password=hash)
+
+   on sama kuin:
+   
+   UserInDB(
+        username="john",
+        password="secret",
+        email="john.doe@example.com",
+        full_name=None,
+        hashed_password=saljfklashfka
+    )
+
+"""
+
+
+"""
+Union or anyOf
+
+    - reponssin voi määritää olemaan jompaa kumpaa tyyppiä --> anyOf 
+"""
+
+
+class Vegetable(BaseModel):
+    description: str
+    type: str
+
+
+class Potato(Vegetable):
+    type = "potato"
+    shape: str
+
+
+class Carrot(Vegetable):
+    type = "carrot"
+
+
+vegetables = {
+    "vegetable1": {"description": "I prefer mine smashed", "type": "potato", "shape": "round"},
+    "vegetable2": {"description": "It is orange", "type": "carrot"},
+}
+
+
+# tässä pakko käyttää unionion vaikka olisinkin python > 3.10
+@app.get("/vegetables/{veg_id}", response_model=Union[Potato, Carrot])
+# /vegetables/vegetable1
+async def get_veggies(veg_id: str):
+    return vegetables[veg_id]
+
+
+"""
+    List of models
+
+    - eli siis palauta modelin mukaisia objekteja
+    - jos jotain extraa, se ei palaudu fronttiin
+
+"""
+
+veggies = [
+    {"description": "I prefer mine smashed", "type": "potato"},
+    {"description": "It is orange", "type": "carrot"}
+]
+
+
+@app.get("/all-veggies/", response_model=list[Vegetable])
+async def all_veggies():
+    return veggies
+
+"""
+Response with arbitrary dict
+.. eli lennosta muoto, jossa määritellään key:n ja value:n tyyppi
+"""
+
+@app.get("/keyword-weights/", response_model=dict[str, float])
+async def read_keyword_weights():
+    return {"foo": 2.3, "bar": 3.4}
