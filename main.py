@@ -10,8 +10,11 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from typing import Any, Union
 from pydantic import BaseModel, Field, HttpUrl, EmailStr
 from typing import Annotated
+import os
 
-app = FastAPI()
+# env testi: jos ENV=production uvicorn main:app --reload, niin ei doksuja, muuten /redoc tai /docs
+env = os.environ['ENV']
+app = FastAPI(openapi_url=None if env == 'production' else '/openapi.json')
 
 # alkuun käytetty Union[] on python < 3.10 version takia, myöhempi | toimii > 3.10:ssä
 
@@ -856,6 +859,7 @@ async def error_route(some_id: int):
         raise HTTPException(status_code=418, detail="Nope! I don't like 3.")
     return {"some_id": some_id}
 
+
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     return JSONResponse(
@@ -863,9 +867,11 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         content=jsonable_encoder({"detail": exc.errors(), "body": exc.body})
     )
 
+
 class Something(BaseModel):
     title: str
     size: int
+
 
 @app.post("/req-validation-error")
 async def create_something(something: Something):
@@ -879,10 +885,12 @@ async def create_something(something: Something):
     - from fastapi.exception_handlers import ...
 """
 
+
 @app.exception_handler(StarletteHTTPException)
 async def another_http_exception_handler(request, exc):
     print(f"OMG, an ERRRORRROR: {repr(exc)}")
     return await http_exception_handler(request, exc)
+
 
 @app.get("/one-more-http-error/{item_id}")
 async def another_http_error(item_id: int):
@@ -890,3 +898,59 @@ async def another_http_error(item_id: int):
     if item_id == 3:
         raise HTTPException(status_code=418, detail="3 again :(")
     return {"item_id": item_id}
+
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Path Operation Configuration 
+
+(Siis tämä kohta koodissa: @app.post(... status_code=status.HTTP_201_CREATED))
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+
+"""""
+ Response status code
+ - eli määritä status code (siis kun onnistunut pyyntö)
+"""""
+
+
+@app.post("/sausage", response_model=PseodoMeat,  status_code=status.HTTP_201_CREATED)
+async def create_sausage(sausage: PseodoMeat):
+    return sausage
+
+"""
+ Tags + Tags with Enums + Summary and Description + Description from docstring + response description
+
+ - eli voi lisätä tägejä (list str). Käyttötarkoitus on dokumentaatiot, jossa siitä tulee kuin otsikko reittien ylle
+ - Enumit helpottaa isossa applikaatiossa näiden hallintaa
+ - Summary ja description .. 
+ - docstring userissa
+ - tsekkaa http://localhost:8000/docs
+ - myös deprecated=true --> näyttää routen harmaana doksuissa, mutta reitti edelleen toimii
+"""
+
+
+class Tags(Enum):
+    sausages = "sausages"
+    users = "users"
+
+
+@app.get("/sausage-route", tags=[Tags.sausages], summary="Returns sausages", description="From this route, you will get some sausages!")
+async def get_some_sausages():
+    return ["HK Blue", "Lenkki"]
+
+
+@app.get("/sausage-route-2", tags=[Tags.sausages], summary="Returns more sausages", description="Didn't get enough of sausages, huh?")
+async def get_more_sausages():
+    return ["HK Blue", "Lenkki"]
+
+
+@app.get("/user-route/", tags=[Tags.users], response_description="Describe the response here :)", deprecated=True)
+async def get_some_users():
+    """
+    Get user names (Or for a post route you can list required attributes)
+    - **name**: there will be just names so the one below is just an example
+    - **fake attribute**: This doesnt exist :(
+    """
+    return ["Rick", "Morty"]

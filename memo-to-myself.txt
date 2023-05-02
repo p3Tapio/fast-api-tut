@@ -12,6 +12,9 @@ pip install requirements.txt
 Start-it-up!
 uvicorn main:app --reload
 
+env:n kanssa 
+ENV=production uvicorn main:app
+
 -- 
 docs: 
 http://127.0.0.1:8000/docs
