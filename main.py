@@ -1,3 +1,4 @@
+from datetime import datetime
 from enum import Enum
 import random
 from string import Template
@@ -954,3 +955,29 @@ async def get_some_users():
     - **fake attribute**: This doesnt exist :(
     """
     return ["Rick", "Morty"]
+
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+JSON Compatible Encoder
+
+    - jsonable_encoder() -- eli kun konvertoidaan esim Pydantic model johonkin JSON yhteensopivaan muotoon (dict, list, etc.)
+
+    - Alla syntyy dict, jossa datetime on konvertoitu stringiksi. Lopputulos ei siis ole json stringi, mutta se on json yhteensopiva eli sitä voi käsitellä esim. json.dumbilla (eli siis tehdä jsoneita)
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+
+class Sport(BaseModel):
+    name: str
+    players: int
+    timestamp: datetime
+    description: str | None = None
+
+
+fake_db = {}
+
+
+@app.put("/sport-route/{id}")
+def update_sport(id: str, sport: Sport):
+    json_compatible_data = jsonable_encoder(sport)
+    fake_db[id] = json_compatible_data
