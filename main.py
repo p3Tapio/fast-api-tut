@@ -1,8 +1,12 @@
 from enum import Enum
 import random
 from string import Template
-from fastapi import FastAPI, Response, status, Query, Path, Body
+from fastapi import FastAPI, HTTPException, Response, status, Query, Path, Body, Request
 from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.exceptions import RequestValidationError
+from fastapi.exception_handlers import http_exception_handler, request_validation_exception_handler
+from fastapi.encoders import jsonable_encoder
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from typing import Any, Union
 from pydantic import BaseModel, Field, HttpUrl, EmailStr
 from typing import Annotated
@@ -724,8 +728,10 @@ Response status codes
 (ekassa muistin virkistykseksi req bodyllä ja toka query paramina)
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
+
 class PseodoMeat(BaseModel):
     name: str
+
 
 @app.post("/makkara/", status_code=201)
 async def create_makkara(req: PseodoMeat):
@@ -736,3 +742,151 @@ async def create_makkara(req: PseodoMeat):
 async def create_lenkki(name: str):
     return {"lenkki": name}
 
+
+"""
+skipattu:
+- form data
+- request files
+- request forms and files
+"""
+
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Handling Errors
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+"""
+- HTTPException 
+"""
+
+beers = {"beer1": {"label": "Rainbow Lager", "nickname": "Denakupari"}}
+
+
+@app.get("/beers/{beer_id}")
+# /beers/beer1
+async def get_beer(beer_id: str):
+    if beer_id not in beers:
+        raise HTTPException(status_code=404, detail="Beer not found :(")
+    return {"beer": beers[beer_id]}
+
+"""
+- add custom headers
+"""
+
+watches = {"Rolex": "Golden timepiece"}
+
+
+@app.get("/watches/{watch_id}")
+async def get_rolex(watch_id: str):
+    if watch_id not in watches:
+        raise HTTPException(
+            status_code=404,
+            detail="No rolex for you :(",
+            headers={"X-Error": "Rolex error"}
+        )
+    return {"watch": watches[watch_id]}
+
+"""
+- install custom exception handlers
+
+    - Customi exception handlerit starlettelta: https://www.starlette.io/exceptions/
+    - Esim UnicornException 🐎
+"""
+
+
+class UnicornException(Exception):
+    def __init__(self, name: str):
+        self.name = name
+
+
+@app.exception_handler(UnicornException)
+async def unicorn_handler(request: Request, exc: UnicornException):
+    return JSONResponse(
+        status_code=418,
+        content={"message": f"Oops, {exc.name} did a poopoo"}
+    )
+
+
+@app.get("/unicorn/{name}")
+async def read_unicorn(name: str):
+    if name == 'yolo':
+        raise UnicornException(name=name)
+    return {"unicorn": name}
+
+
+"""
+- Override the default exception handlers
+
+    - request validation exceptions (RequestValidationError) = epävalidia request dataa 
+        - overridaus: importtaa RequestValidation error ja käytä @app.exception_handler(RequestValidationError) funktion dekoraattorina
+        - saa automaagisesti paramsit request ja exc
+        - Doksuissa kans PlainTextResponse, jonka hyötyä en ymmärrä :-D 
+        https://fastapi.tiangolo.com/tutorial/handling-errors/?h=#override-request-validation-exceptions
+"""
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request, exc):
+    return JSONResponse(status_code=400, content={"message": "Custom ERRRRORORORORO", "details": exc.errors()})
+
+
+@app.get("/custom-exception/{item_id}")
+async def read_something(item_id: int):
+    return {"item_id": item_id}
+
+
+"""
+    - Saman voi tehdä muille, esim. HTTPException & RequestValidationError
+    - Jälkimmäiseen voi tyrkätä mukaan errorin aihettaneen bodyn (!)
+    - Tässä HTTPException error on Starlettelta, josta tulee suurin osa mahdollisista responsseista (Vois käyttää myös fastapi.responsea, mutta tässä niinkuin esiminä starlette) 
+        - Erorna näissä kahdessa on se, että FastApin HTTPExceptioniin voi lisätä headereitä. Suositus käyttää Starlettea, koska jos joku Starletten koodista tai plugareista heittää errorit, niin custom handler pääsee siihen väliin 
+"""
+
+
+# @app.exception_handler(StarletteHTTPException)
+# async def http_exception_handler(request, exc):
+#     return JSONResponse(status_code=exc.status_code, content={"message": "Custom message", "info": exc.detail})
+
+
+@app.get("/http-exception/{some_id}")
+async def error_route(some_id: int):
+    if some_id == 3:
+        raise HTTPException(status_code=418, detail="Nope! I don't like 3.")
+    return {"some_id": some_id}
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content=jsonable_encoder({"detail": exc.errors(), "body": exc.body})
+    )
+
+class Something(BaseModel):
+    title: str
+    size: int
+
+@app.post("/req-validation-error")
+async def create_something(something: Something):
+    return something
+
+
+"""
+    Re-use FastApi's exception handlers
+
+    - Jos haluta käyttää FastApin defaultteja (Siis vissiin yliajaa Starletten heittämät errorit FastApin handlereilla, joissa siis etuna mm. että niihin voi työntää headerit)
+    - from fastapi.exception_handlers import ...
+"""
+
+@app.exception_handler(StarletteHTTPException)
+async def another_http_exception_handler(request, exc):
+    print(f"OMG, an ERRRORRROR: {repr(exc)}")
+    return await http_exception_handler(request, exc)
+
+@app.get("/one-more-http-error/{item_id}")
+async def another_http_error(item_id: int):
+    print("HELLO")
+    if item_id == 3:
+        raise HTTPException(status_code=418, detail="3 again :(")
+    return {"item_id": item_id}
