@@ -13,8 +13,8 @@ from pydantic import BaseModel, Field, HttpUrl, EmailStr
 from typing import Annotated
 import os
 
-# env testi: jos ENV=production uvicorn main:app --reload, niin ei doksuja, muuten /redoc tai /docs
-env = os.environ['ENV']
+# env testi: jos ENV=production uvicorn main:app --reload, niin ei doksuja, muuten /redoc tai /docs. Jälkimmäinen arvo on defaultti, jos ekaa ei ole.
+env = os.getenv('ENV', 'development')
 app = FastAPI(openapi_url=None if env == 'production' else '/openapi.json')
 
 # alkuun käytetty Union[] on python < 3.10 version takia, myöhempi | toimii > 3.10:ssä
@@ -887,10 +887,10 @@ async def create_something(something: Something):
 """
 
 
-@app.exception_handler(StarletteHTTPException)
-async def another_http_exception_handler(request, exc):
-    print(f"OMG, an ERRRORRROR: {repr(exc)}")
-    return await http_exception_handler(request, exc)
+# @app.exception_handler(StarletteHTTPException)
+# async def another_http_exception_handler(request, exc):
+#     print(f"OMG, an ERRRORRROR: {repr(exc)}")
+#     return await http_exception_handler(request, exc)
 
 
 @app.get("/one-more-http-error/{item_id}")
@@ -981,3 +981,52 @@ fake_db = {}
 def update_sport(id: str, sport: Sport):
     json_compatible_data = jsonable_encoder(sport)
     fake_db[id] = json_compatible_data
+
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Body - Updates
+
+ - update replacing with PUT (nollaa muut kuin pyynnössä tulevat kentät)
+
+ - vs. PATCH (joka muokkaa vaan lähetetyn kentän --> ) 
+
+Using Pydantic's exclude_unset parameter  + Using Pydantic's update parameter
+
+ - Osittaisiin päivityksiin, patcheihin.
+ - Luo dict:n jossa vain asetetut arvot ... jne  tjsp. 
+    https://fastapi.tiangolo.com/tutorial/body-updates/#using-pydantics-exclude_unset-parameter
+ - ks. esimi alla
+
+ (Paitsi näköjään ei toimi jos field on required, kyykkää jos sitä ei ole mukana.)
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+class UpdateItem(BaseModel):
+    name: str 
+    description: str | None = None
+    price: float | None = None
+
+update_items = {
+    "foo": {"name": "Foo", "price": 3.50},
+    "bar": {"name": "Bar", "description": "Bar is where they sell beer :)", "price": None}    
+}
+
+@app.get("/update-items/{item_id}", response_model=UpdateItem)
+async def read_update_items(item_id: str):
+    return update_items[item_id]
+
+# @app.put("/update-items/{item_id}", response_model=UpdateItem)
+# async def update_update_items(item_id: str, item: UpdateItem):
+#     update_item_encoded = jsonable_encoder(item)
+#     update_items[item_id] = update_item_encoded
+#     return update_item_encoded
+
+@app.patch("/update-items/{item_id}", response_model=UpdateItem)
+async def update_update_items(item_id: str, item: UpdateItem):
+    strored_item = update_items[item_id]
+    stored_item_model = UpdateItem(**strored_item)
+    update_data = item.dict(exclude_unset=True) # exclude_unset !
+    updated_item = stored_item_model.copy(update=update_data) # update= !
+    update_items[item_id] = jsonable_encoder(updated_item)
+    return updated_item
