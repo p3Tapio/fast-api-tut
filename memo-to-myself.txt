@@ -9,7 +9,7 @@ start env:
 Asennukset:
 pip install requirements.txt 
 Niiden päivitys: 
-pip freeze requirements.txt
+pip freeze > requirements.txt
 
 Start-it-up!
 uvicorn main:app --reload
