@@ -25,5 +25,3 @@ http://127.0.0.1:8000/redoc
 Uusi endpoint doksuille tai deaktivointi: 
 app = FastAPI(openapi_url="/api/v1/openapi.json")
 openapi_url=None
-
-Branches -- eri osia nakattu eri brancheihin
