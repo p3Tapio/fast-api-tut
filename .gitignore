@@ -1,2 +1,3 @@
 fast-env
 __pycache__
+*.db
